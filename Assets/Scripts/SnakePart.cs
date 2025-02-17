@@ -11,6 +11,7 @@ public class SnakePart : MonoBehaviourPunCallbacks
 {
     public Vector2 pos;
     public Vector2 localPos;
+    public Vector2 prevPos;
     public bool localPosSeek;
     public GameObject localObjPref;
     private GameObject localDup;
@@ -22,10 +23,15 @@ public class SnakePart : MonoBehaviourPunCallbacks
         grid = GameObject.FindObjectOfType<Grid>();
         if(photonView.IsMine) {
             localDup = Instantiate(localObjPref, transform.position, Quaternion.identity);
-            localPos = transform.position;
+            localDup.GetComponent<SpriteRenderer>().enabled = false;
+            prevPos = transform.position;
         }
         
-        SetPos(new Vector2(transform.position.x, transform.position.y));   
+        SetPos(new Vector2(transform.position.x, transform.position.y));
+
+        // if(!photonView.IsMine) {
+		// 	GetComponent<SpriteRenderer>().enabled = true;
+		// }   
     }
 
     void OnDestroy() {
@@ -37,10 +43,7 @@ public class SnakePart : MonoBehaviourPunCallbacks
     }
 
     public void SetLocalPos(Vector2 newP) {
-        localPos = newP;
-        //if(localPosSeek) return;
-        //localPosSeek = true;
-        //DOTween.To(()=> localPos, x=> localPos = x, newP, Time.fixedDeltaTime*5).OnComplete(() => localPosSeek = false);
+        prevPos = newP;
     }
 
     [PunRPC]
@@ -53,17 +56,7 @@ public class SnakePart : MonoBehaviourPunCallbacks
     void Update()
     {
         if(photonView.IsMine) {
-            var distx = (localPos.x - localDup.transform.position.x);
-            distx *= distx;
-            var disty = (localPos.y - localDup.transform.position.y);
-            disty *= disty;
-            if(distx > disty) {
-                localDup.transform.position = Vector2.MoveTowards(localDup.transform.position, new Vector2(localPos.x, localDup.transform.position.y), 2f);
-            } else if(distx < disty) {
-                localDup.transform.position = Vector2.MoveTowards(localDup.transform.position, new Vector2(localDup.transform.position.x, localPos.y), 2f);
-            } else {
-                localDup.transform.position = Vector2.MoveTowards(localDup.transform.position, localPos, 2f);
-            }
+            localDup.transform.position = localPos;
         }
         transform.position = grid.trans(pos);
     }
