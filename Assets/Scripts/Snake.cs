@@ -6,6 +6,7 @@ using Photon.Realtime;
 using ExitGames.Client.Photon.StructWrapping;
 using DG.Tweening;
 using System.Linq;
+using Unity.VisualScripting;
 
 public class Snake : MonoBehaviourPunCallbacks
 {
@@ -19,21 +20,18 @@ public class Snake : MonoBehaviourPunCallbacks
 
     public float speed;
     private Grid grid;
-    private Player player;
+    private ServerPlayer serverplayer;
 
     public GameObject body;
     public int bodyCount;
     public List<GameObject> parts;
     private float life = 0;
 
-    public GameObject localObjPref;
-    private GameObject localDup;
-    private float frameTime;
     // Start is called before the first frame update
 
     void Start() {
         grid = GameObject.FindObjectOfType<Grid>();
-        player = GameObject.FindObjectOfType<Player>();
+        serverplayer = GameObject.FindObjectOfType<ServerPlayer>();
 
         GetComponent<PhotonView>().RPC("SetPos", RpcTarget.All, new Vector2(transform.position.x, transform.position.y)); 
         if(photonView.IsMine) {
@@ -41,22 +39,16 @@ public class Snake : MonoBehaviourPunCallbacks
                 var tmp = PhotonNetwork.Instantiate(body.name, pos + Vector2.down * (i+1), Quaternion.identity);
                 parts.Add(tmp);
             }
-
-            localDup = Instantiate(localObjPref, transform.position, Quaternion.identity);
-            localDup.GetComponent<SpriteRenderer>().enabled = false;
-            localPos = transform.position;
         }
     }
 
     // Update is called once per frame
     void Update()
     {
-        if(!player.Ready) return;
+        if(!serverplayer.Ready) return;
 
         life += Time.deltaTime;
         if(photonView.IsMine) {
-            frameTime += Time.deltaTime;
-
             if(Input.GetKey(KeyCode.UpArrow)) {
                 if(localVel.Count < 3 && vel != Vector2.down) localVel.Add(Vector2.up);
             } 
@@ -73,44 +65,7 @@ public class Snake : MonoBehaviourPunCallbacks
                 GetComponent<PhotonView>().RPC("SetVel", RpcTarget.All, localVel.ElementAt(0));
                 localVel.RemoveAt(0);
             }
-            GetComponent<PhotonView>().RPC("SetPos", RpcTarget.All, pos + vel*Time.deltaTime*speed);
-
-            float t = Vector2.Distance(pos, prevPos)/(grid.size.x);
-            Debug.Log(Vector2.Distance(pos, grid.trans(prevPos)));
-            //Debug.Log(t);
-            localPos = Vector2.Lerp(grid.trans(prevPos), pos, t);
-
-
-            if(bodyCount > 1) {
-                for(int i=1; i < bodyCount; i++) {
-                    t = Vector2.Distance(parts[bodyCount-i-1].GetComponent<SnakePart>().localPos, parts[bodyCount-i].GetComponent<SnakePart>().prevPos)/(grid.size.x);
-                    parts[bodyCount-i].GetComponent<SnakePart>().localPos =
-                        Vector2.Lerp(
-                            parts[bodyCount-i].GetComponent<SnakePart>().prevPos,
-                            grid.trans(parts[bodyCount-i-1].GetComponent<SnakePart>().localPos),
-                            t
-                        );
-                } 
-            }
-
-            if(bodyCount > 1) {
-                t = Vector2.Distance(parts[0].GetComponent<SnakePart>().localPos, parts[1].GetComponent<SnakePart>().prevPos)/(grid.size.x);
-                parts[1].GetComponent<SnakePart>().localPos = 
-                Vector2.Lerp(
-                    parts[1].GetComponent<SnakePart>().prevPos,
-                    parts[0].GetComponent<SnakePart>().localPos,
-                    t
-                );
-            }
-            if(bodyCount > 0) {
-                t = Vector2.Distance(prevPos, parts[0].GetComponent<SnakePart>().prevPos)/(grid.size.x);
-                parts[0].GetComponent<SnakePart>().localPos = 
-                Vector2.Lerp(
-                    parts[0].GetComponent<SnakePart>().prevPos,
-                    prevPos,
-                    t
-                );
-            }
+            GetComponent<PhotonView>().RPC("SetPos", RpcTarget.All, pos + vel*Time.deltaTime*speed); 
 
             if(Vector2.Distance( grid.trans(pos), grid.trans(prevPos)) >= grid.size.x) {
                 
@@ -119,23 +74,16 @@ public class Snake : MonoBehaviourPunCallbacks
                     for(int i=1; i < bodyCount; i++) {
                         if(Vector2.Distance(parts[bodyCount-i].GetComponent<SnakePart>().pos, parts[bodyCount-i-1].GetComponent<SnakePart>().pos) > grid.size.x/2) {
                             parts[bodyCount-i].GetComponent<SnakePart>().SetPos(grid.trans(parts[bodyCount-i-1].GetComponent<SnakePart>().pos));
-                            parts[bodyCount-i].GetComponent<SnakePart>().SetLocalPos(
-                                parts[bodyCount-i-1].GetComponent<SnakePart>().prevPos
-                            );
                         }
                     } 
                 }
 
                 if(bodyCount > 1) {
                     parts[1].GetComponent<SnakePart>().SetPos(parts[0].GetComponent<SnakePart>().pos);
-                    parts[1].GetComponent<SnakePart>().SetLocalPos(parts[0].GetComponent<SnakePart>().prevPos);
                 }
                 if(bodyCount > 0) {
                     parts[0].GetComponent<SnakePart>().SetPos(prevPos);
-                    parts[0].GetComponent<SnakePart>().SetLocalPos(prevPos);
                 }
-
-                frameTime = 0;
 
                 prevPos = grid.trans(pos);
                 pos = prevPos;
@@ -147,34 +95,30 @@ public class Snake : MonoBehaviourPunCallbacks
                             foreach(var p in parts) {
                                 PhotonNetwork.Destroy(p.GetComponent<PhotonView>());
                             }
-                            Destroy(localDup);
                             PhotonNetwork.Destroy(GetComponent<PhotonView>());
                             PhotonNetwork.Instantiate("SnakeHead", Vector3.zero, Quaternion.identity);
                         }
-                        if(b.GetComponent<Food>()) {
-                            AddTail();
-                            b.GetComponent<PhotonView>().RPC("MarkForDel", RpcTarget.All);
+                        if(b.GetComponent<ISnakeCollidable>() != null) {
+                            b.GetComponent<ISnakeCollidable>().collide(this);
                         }
                     }
                 }
             }
 
-            GameObject.FindObjectOfType<Cam>().follow = localPos;
-            localDup.transform.position = pos;
+            GameObject.FindObjectOfType<Cam>().follow = pos;
         }
 
         transform.position = grid.trans(pos);
     }
 
-    void AddTail() {
-        bodyCount++;
+    public void AddTail() { 
         if(photonView.IsMine) {
             for(int i = 0; i < parts.Count; i++) {
                 parts[i].transform.DOPunchScale(Vector3.one*1.05f, 0.35f).SetDelay(i*0.07f).Play();
             }
 
             var p = Vector2.zero;
-            if(bodyCount == 0) {
+            if(bodyCount <= 1) {
                 p = pos-vel;
             }
             else {
@@ -182,14 +126,18 @@ public class Snake : MonoBehaviourPunCallbacks
             }
             var tmp = PhotonNetwork.Instantiate(body.name, p, Quaternion.identity);
             parts.Add(tmp);
+            bodyCount++;
         }
     }
 
-    void RemoveTail() {
+    public bool RemoveTail() {
         if(bodyCount > 0) {
+            PhotonNetwork.Destroy(parts[bodyCount-1].GetComponent<PhotonView>());
+            parts.RemoveAt(bodyCount-1);
             bodyCount -= 1;
-            PhotonNetwork.Destroy(parts[bodyCount+1].GetComponent<PhotonView>());
-            parts.RemoveAt(bodyCount+1);
+            return true;
+        } else {
+            return false;
         }
     }
 

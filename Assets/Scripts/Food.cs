@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Photon.Pun;
 using UnityEngine;
 
-public class Food : MonoBehaviourPun
+public class Food : MonoBehaviourPun, ISnakeCollidable 
 {
     public bool alive;
     // Start is called before the first frame update
@@ -26,5 +26,11 @@ public class Food : MonoBehaviourPun
     void MarkForDel()
     {
         alive = false;
+    }
+
+    public void collide(Snake snek)
+    {
+        snek.AddTail();
+        photonView.RPC("MarkForDel", RpcTarget.All);
     }
 }

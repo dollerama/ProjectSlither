@@ -169,10 +169,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   pos: {x: 0, y: 0}
-  localPos: {x: 0, y: 0}
-  prevPos: {x: 0, y: 0}
-  localPosSeek: 0
-  localObjPref: {fileID: 7383463162509469788, guid: eedf3a9d46b7f408bb3ec1ef55e190b2, type: 3}
   grid: {fileID: 0}
 --- !u!114 &-8653401348751338502
 MonoBehaviour:

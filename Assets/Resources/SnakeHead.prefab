@@ -177,9 +177,8 @@ MonoBehaviour:
   localVel: []
   speed: 5
   body: {fileID: 7383463162509469788, guid: 40c3443feb65548158ccd21698171785, type: 3}
-  bodyCount: 3
+  bodyCount: 0
   parts: []
-  localObjPref: {fileID: 7383463162509469788, guid: eedf3a9d46b7f408bb3ec1ef55e190b2, type: 3}
 --- !u!114 &-3137180226593296938
 MonoBehaviour:
   m_ObjectHideFlags: 0
