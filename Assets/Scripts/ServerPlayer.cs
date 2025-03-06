@@ -6,9 +6,11 @@ using UnityEngine.UI;
 using Photon.Realtime;
 using Photon.Pun.UtilityScripts;
 using System.Linq;
+using UnityEngine.Events;
 
 public class ServerPlayer : MonoBehaviourPunCallbacks
 {
+	public bool Testbed;
 	public GameObject PlayerTagPref;
 	public Transform PlayerList;
 	public Button ReadyUpBtn;
@@ -21,6 +23,8 @@ public class ServerPlayer : MonoBehaviourPunCallbacks
 
 	public List<Base> teams;
 
+	public UnityEvent OnReadyUp;
+
 	public Base GetTeam(int id) {
 		return teams.Find(x => x.teamId == id);
 	}
@@ -28,6 +32,10 @@ public class ServerPlayer : MonoBehaviourPunCallbacks
     // Start is called before the first frame update
     void Start()
     {
+		if(Testbed) {
+			PhotonNetwork.ConnectUsingSettings();
+		}
+ 
 		if(Ready) {
 			PlayerList.transform.parent.gameObject.SetActive(false);
 		}
@@ -45,6 +53,13 @@ public class ServerPlayer : MonoBehaviourPunCallbacks
 		}
     }
 
+    public override void OnConnectedToMaster()
+    {
+        if(Testbed) {
+			PhotonNetwork.JoinRandomOrCreateRoom();
+		}
+    }
+
     void Update()
     {
         if(photonView.IsMine && Ready) {
@@ -56,7 +71,6 @@ public class ServerPlayer : MonoBehaviourPunCallbacks
 				if(winTimer > 2) {
 					Time.timeScale = 1;
 					PhotonNetwork.LoadLevel(0);
-					//PhotonNetwork.LeaveRoom();
 				}
 			} else if(teams.Count(x => x.alive) == 1) {
 				winner = teams.Where(x => x.alive).First().teamId;
@@ -85,6 +99,7 @@ public class ServerPlayer : MonoBehaviourPunCallbacks
 		Ready = true;
 		teams = teams.OrderBy(x => x.teamId).ToList();
 		PlayerList.transform.parent.gameObject.SetActive(false);
+		OnReadyUp?.Invoke();
 	}
 
 	[PunRPC]

@@ -42,12 +42,18 @@ public class Snake : MonoBehaviourPunCallbacks
         }
     }
 
+    private void tryAddVel(Vector2 val) {
+        if(localVel.Count <= 3 && vel != val*-1) {
+            if (localVel.Count > 0 && localVel.Last() != val || localVel.Count == 0) {
+                localVel.Add(val);
+            }
+        }
+    }
+
     // Update is called once per frame
     void Update()
     {
         if(!serverplayer.Ready) return;
-
-        transform.position = grid.trans(pos);
 
         if(photonView.IsMine) {
             if(teamId == -1) {
@@ -60,16 +66,16 @@ public class Snake : MonoBehaviourPunCallbacks
             life += Time.deltaTime;
         
             if(Input.GetKey(KeyCode.UpArrow)) {
-                if(localVel.Count <= 3 && vel != Vector2.down) localVel.Add(Vector2.up);
+                tryAddVel(Vector2.up);
             } 
             else if(Input.GetKey(KeyCode.DownArrow)) {
-                if(localVel.Count <= 3 && vel != Vector2.up) localVel.Add(Vector2.down);
+                tryAddVel(Vector2.down);
             } 
-            if(Input.GetKey(KeyCode.LeftArrow)) {
-                if(localVel.Count <= 3 && vel != Vector2.right) localVel.Add(Vector2.left);
+            else if(Input.GetKey(KeyCode.LeftArrow)) {
+                tryAddVel(Vector2.left);
             } 
             else if(Input.GetKey(KeyCode.RightArrow)) {
-                if(localVel.Count <= 3 && vel != Vector2.left) localVel.Add(Vector2.right);
+                tryAddVel(Vector2.right);
             } 
 
             if(localVel.Count > 0) {
@@ -100,7 +106,7 @@ public class Snake : MonoBehaviourPunCallbacks
                 var a = Physics2D.OverlapBoxAll(prevPos, Vector2.one/4f, 0f);
                 if(a.Length > 0 && life > 1) {
                     foreach (var b in a) {
-                        if((b.GetComponent<Snake>() && b.GetComponent<Snake>().playerID == playerID) || b.GetComponent<SnakePart>()) {
+                        if((b.GetComponent<Snake>() && b.GetComponent<Snake>().playerID == playerID) || b.GetComponent<SnakePart>() || b.tag == "Wall") {
                             foreach(var p in parts) {
                                 PhotonNetwork.Destroy(p.GetComponent<PhotonView>());
                             }
@@ -124,7 +130,7 @@ public class Snake : MonoBehaviourPunCallbacks
             GameObject.FindObjectOfType<Cam>().follow = pos;
         }
 
-        
+        transform.position = grid.trans(pos);
     }
 
     public override void OnLeftRoom()

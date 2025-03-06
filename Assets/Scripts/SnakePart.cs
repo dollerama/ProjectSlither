@@ -18,10 +18,17 @@ public class SnakePart : MonoBehaviourPunCallbacks
         grid = GameObject.FindObjectOfType<Grid>();
         
         SetPos(new Vector2(transform.position.x, transform.position.y));
+        StartCoroutine(Efx());
     }
 
     public void SetPos(Vector2 newP) {
         pos = newP;
+    }
+
+    IEnumerator Efx() {
+        var tmp = PhotonNetwork.Instantiate("Snare", transform.position, Quaternion.identity);
+        yield return new WaitForSeconds(1.5f);
+        PhotonNetwork.Destroy(tmp.GetComponent<PhotonView>());
     }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
