@@ -21,13 +21,19 @@ public class SnakePart : MonoBehaviourPunCallbacks
     }
 
     public void SetPos(Vector2 newP) {
-        GetComponent<PhotonView>().RPC("SetPosPriv", RpcTarget.All, newP);
+        pos = newP;
     }
 
-    [PunRPC]
-    void SetPosPriv(Vector2 newP)
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
-        pos = newP;
+        if (stream.IsWriting)
+        {
+            stream.SendNext(pos);
+        }
+        else
+        {
+            pos = (Vector2)stream.ReceiveNext();
+        }
     }
 
     // Update is called once per frame

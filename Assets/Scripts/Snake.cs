@@ -26,6 +26,7 @@ public class Snake : MonoBehaviourPunCallbacks
     public int bodyCount;
     public List<GameObject> parts;
     private float life = 0;
+    public int teamId;
 
     // Start is called before the first frame update
 
@@ -33,7 +34,6 @@ public class Snake : MonoBehaviourPunCallbacks
         grid = GameObject.FindObjectOfType<Grid>();
         serverplayer = GameObject.FindObjectOfType<ServerPlayer>();
 
-        GetComponent<PhotonView>().RPC("SetPos", RpcTarget.All, new Vector2(transform.position.x, transform.position.y)); 
         if(photonView.IsMine) {
             for(int i=0; i < bodyCount; i++) {
                 var tmp = PhotonNetwork.Instantiate(body.name, pos + Vector2.down * (i+1), Quaternion.identity);
@@ -47,29 +47,38 @@ public class Snake : MonoBehaviourPunCallbacks
     {
         if(!serverplayer.Ready) return;
 
-        life += Time.deltaTime;
+        transform.position = grid.trans(pos);
+
         if(photonView.IsMine) {
+            if(teamId == -1) {
+                var smallestTeam = serverplayer.teams.OrderBy(x => x.playerCount).Select(x => x.teamId).First();
+                teamId = smallestTeam;
+                serverplayer.GetTeam(smallestTeam).playerCount++;
+                pos = serverplayer.GetTeam(smallestTeam).transform.position;
+            }
+
+            life += Time.deltaTime;
+        
             if(Input.GetKey(KeyCode.UpArrow)) {
-                if(localVel.Count < 3 && vel != Vector2.down) localVel.Add(Vector2.up);
+                if(localVel.Count <= 3 && vel != Vector2.down) localVel.Add(Vector2.up);
             } 
-            if(Input.GetKey(KeyCode.DownArrow)) {
-                if(localVel.Count < 3 && vel != Vector2.up) localVel.Add(Vector2.down);
+            else if(Input.GetKey(KeyCode.DownArrow)) {
+                if(localVel.Count <= 3 && vel != Vector2.up) localVel.Add(Vector2.down);
             } 
             if(Input.GetKey(KeyCode.LeftArrow)) {
-                if(localVel.Count < 3 && vel != Vector2.right) localVel.Add(Vector2.left);
+                if(localVel.Count <= 3 && vel != Vector2.right) localVel.Add(Vector2.left);
             } 
-            if(Input.GetKey(KeyCode.RightArrow)) {
-                if(localVel.Count < 3 && vel != Vector2.left) localVel.Add(Vector2.right);
+            else if(Input.GetKey(KeyCode.RightArrow)) {
+                if(localVel.Count <= 3 && vel != Vector2.left) localVel.Add(Vector2.right);
             } 
+
             if(localVel.Count > 0) {
-                GetComponent<PhotonView>().RPC("SetVel", RpcTarget.All, localVel.ElementAt(0));
+                vel = localVel.ElementAt(0);
                 localVel.RemoveAt(0);
             }
-            GetComponent<PhotonView>().RPC("SetPos", RpcTarget.All, pos + vel*Time.deltaTime*speed); 
+            pos += vel*Time.deltaTime*speed; 
 
             if(Vector2.Distance( grid.trans(pos), grid.trans(prevPos)) >= grid.size.x) {
-                
-
                 if(bodyCount > 1) {
                     for(int i=1; i < bodyCount; i++) {
                         if(Vector2.Distance(parts[bodyCount-i].GetComponent<SnakePart>().pos, parts[bodyCount-i-1].GetComponent<SnakePart>().pos) > grid.size.x/2) {
@@ -95,10 +104,17 @@ public class Snake : MonoBehaviourPunCallbacks
                             foreach(var p in parts) {
                                 PhotonNetwork.Destroy(p.GetComponent<PhotonView>());
                             }
+                            
+                            if(serverplayer.GetTeam(teamId).alive) { 
+                                var tm = PhotonNetwork.Instantiate("SnakeHead", serverplayer.GetTeam(teamId).transform.position, Quaternion.identity);
+                                tm.GetComponent<Snake>().teamId = teamId;
+                                tm.GetComponent<Snake>().pos = serverplayer.GetTeam(teamId).transform.position;
+                            }
+
                             PhotonNetwork.Destroy(GetComponent<PhotonView>());
-                            PhotonNetwork.Instantiate("SnakeHead", Vector3.zero, Quaternion.identity);
                         }
                         if(b.GetComponent<ISnakeCollidable>() != null) {
+                            b.GetComponent<PhotonView>().TransferOwnership(PhotonNetwork.LocalPlayer);
                             b.GetComponent<ISnakeCollidable>().collide(this);
                         }
                     }
@@ -108,15 +124,32 @@ public class Snake : MonoBehaviourPunCallbacks
             GameObject.FindObjectOfType<Cam>().follow = pos;
         }
 
-        transform.position = grid.trans(pos);
+        
+    }
+
+    public override void OnLeftRoom()
+    {
+        serverplayer.GetTeam(teamId).playerCount--;
+    }
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            stream.SendNext(vel);
+            stream.SendNext(pos);
+            stream.SendNext(teamId);
+        }
+        else
+        {
+            vel = (Vector2)stream.ReceiveNext();
+            pos = (Vector2)stream.ReceiveNext();
+            teamId = (int)stream.ReceiveNext();
+        }
     }
 
     public void AddTail() { 
         if(photonView.IsMine) {
-            for(int i = 0; i < parts.Count; i++) {
-                parts[i].transform.DOPunchScale(Vector3.one*1.05f, 0.35f).SetDelay(i*0.07f).Play();
-            }
-
             var p = Vector2.zero;
             if(bodyCount <= 1) {
                 p = pos-vel;
@@ -139,16 +172,5 @@ public class Snake : MonoBehaviourPunCallbacks
         } else {
             return false;
         }
-    }
-
-    [PunRPC]
-    void SetVel(Vector2 newV) {
-        vel = newV;
-    }
-
-    [PunRPC]
-    void SetPos(Vector2 newP)
-    {
-        pos = newP;
     }
 }
