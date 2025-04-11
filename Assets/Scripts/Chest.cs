@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
+using ExitGames.Client.Photon.StructWrapping;
 using Photon.Pun;
 using UnityEngine;
 
@@ -13,12 +14,14 @@ public class Chest : MonoBehaviourPunCallbacks, ISnakeCollidable
     public bool Activate;
     private Grid grid;
 
+    public Transform leaves;
+
     public void collide(Snake snek)
     {
-        if(!Activate) {
+        if(!Activate && photonView.IsMine) {
             transform.DOPunchRotation(new Vector3(0, 0, 180), 0.75f);
-            transform.DOPunchScale(Vector3.one*1.25f, 0.2f);
             Radius.DOScale(RadiusVal,1f);
+            leaves.DOScale(1, 1f);
             StartCoroutine(Spawn());
             Activate = true;
         }
@@ -31,9 +34,9 @@ public class Chest : MonoBehaviourPunCallbacks, ISnakeCollidable
 
     private IEnumerator Spawn() {
         for(int i=0; i < SpawnCount; i++) {
-            var a = grid.trans(transform.position + new Vector3(Random.Range(-RadiusVal/2.0f,RadiusVal/2.0f), Random.Range(-RadiusVal/2.0f,RadiusVal/2.0f), 0));
-            var tmp = PhotonNetwork.Instantiate("Food", transform.position, Quaternion.identity);
-            DOTween.To(()=> tmp.transform.position, x=> tmp.transform.position = x, new Vector3(a.x, a.y, 0), 1f);
+            var pos = grid.trans(transform.position + new Vector3(Random.Range(-RadiusVal/2.0f,RadiusVal/2.0f), Random.Range(-RadiusVal/2.0f,RadiusVal/2.0f), 0));
+            FoodManager.Instance.Spawn(transform.position, (Vector3)grid.trans(pos));
+            transform.DOPunchScale(Vector3.one*0.1f, 0.2f);
             yield return new WaitForSeconds(Delay);
         }
         Radius.DOScale(0, 0.75f).OnComplete(() => {

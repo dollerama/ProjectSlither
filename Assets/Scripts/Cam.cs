@@ -11,5 +11,6 @@ public class Cam : MonoBehaviour
     void Update()
     {
         transform.position = Vector3.Lerp(transform.position, follow, Time.deltaTime*damp);
+        transform.position = new Vector3(transform.position.x, transform.position.y, -50f);
     }
 }

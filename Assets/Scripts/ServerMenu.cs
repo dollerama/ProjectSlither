@@ -36,10 +36,6 @@ public class ServerMenu : MonoBehaviourPunCallbacks
                     connectPanelText.text = "connecting...";
                 });
             });
-
-            // Refresh.onClick.AddListener(() => {
-            //     PhotonNetwork.ref
-            // });
         }
     }
 

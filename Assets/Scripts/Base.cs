@@ -12,6 +12,7 @@ public class Base : MonoBehaviourPunCallbacks, ISnakeCollidable
     public TMPro.TextMeshProUGUI ResourcesT;
     public int teamId;
     public int playerCount;
+    public int livingPlayerCount;
     public bool alive;
 
     void Start()
@@ -37,14 +38,17 @@ public class Base : MonoBehaviourPunCallbacks, ISnakeCollidable
             stream.SendNext(alive);
             stream.SendNext(playerCount);
             stream.SendNext(teamId);
+            stream.SendNext(livingPlayerCount);
         }
         else
         {
             Resources = (int)stream.ReceiveNext();
-            ResourcesT.text = Resources.ToString();   
+            ResourcesT.text = Resources.ToString(); 
+              
             alive = (bool)stream.ReceiveNext();
             playerCount = (int)stream.ReceiveNext();
             teamId = (int)stream.ReceiveNext();
+            livingPlayerCount = (int)stream.ReceiveNext();
         }
     }
 
@@ -52,9 +56,7 @@ public class Base : MonoBehaviourPunCallbacks, ISnakeCollidable
     {
         if(photonView.IsMine) {
             if(Resources < 0 && alive) {
-                //PhotonNetwork.Destroy(photonView);
-                alive = false;
-                transform.DOScale(Vector3.one*0.2f, 0.25f);
+                photonView.RPC("killRPC", RpcTarget.All);
             }
         }
     }
@@ -64,5 +66,30 @@ public class Base : MonoBehaviourPunCallbacks, ISnakeCollidable
         Resources += amt;
         
         ResourcesT.text = Resources.ToString();         
+    }
+
+    [PunRPC]
+    void addPlayerRPC() {
+        playerCount++;
+        livingPlayerCount++;       
+    }
+
+    [PunRPC]
+    void removePlayerRPC() {
+        livingPlayerCount--;       
+    }
+
+    [PunRPC]
+    void killRPC() {
+        alive = false;
+        transform.DOScale(Vector3.one*0.2f, 0.25f);    
+    }
+
+    public void addPlayer() {
+        photonView.RPC("addPlayerRPC", RpcTarget.All);
+    }
+
+    public void removePlayer() {
+        photonView.RPC("removePlayerRPC", RpcTarget.All);
     }
 }

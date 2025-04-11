@@ -20,6 +20,9 @@ public class Chaser : MonoBehaviourPun, ISnakeCollidable
     private float timer;
     private float timer2;
     private float frames;
+
+    public Transform spr;
+    public Transform backing;
     // Start is called before the first frame update
     void Start()
     {
@@ -49,6 +52,9 @@ public class Chaser : MonoBehaviourPun, ISnakeCollidable
     void Update()
     {
         if(Activate && photonView.IsMine) {
+            backing.Rotate(Vector3.forward*Time.deltaTime*10);
+            spr.localPosition = new Vector3(0, Mathf.Abs(0.3f*Mathf.Sin(Time.time)),0);
+
             pos += vel * speed * Time.deltaTime;
             frames += Time.deltaTime;
 
@@ -89,11 +95,9 @@ public class Chaser : MonoBehaviourPun, ISnakeCollidable
 
                 if(timer >= spawnRate) {
                     timer = 0;
-                    //transform.DOPunchScale(Vector3.one*1.25f, 0.2f);
                     life -= 1;
                     
-                    var tmp = PhotonNetwork.Instantiate("Food", pos, Quaternion.identity);
-                    DOTween.To(()=> tmp.transform.position, x=> tmp.transform.position = x, (Vector3)grid.trans(pos), 1f);
+                    FoodManager.Instance.Spawn(pos, (Vector3)grid.trans(pos));
                 }
             }
 

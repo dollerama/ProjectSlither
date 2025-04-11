@@ -34,7 +34,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 1
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &7349705873515691038
 SpriteRenderer:
@@ -77,7 +77,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
+  m_Sprite: {fileID: 1648828948, guid: 1f66df0d40cdb4421b9d7226308120df, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -104,7 +104,7 @@ MonoBehaviour:
   Group: 0
   prefixField: -1
   Synchronization: 3
-  OwnershipTransfer: 0
+  OwnershipTransfer: 1
   observableSearch: 2
   ObservedComponents:
   - {fileID: -8653401348751338502}
@@ -170,6 +170,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pos: {x: 0, y: 0}
   grid: {fileID: 0}
+  spr: {fileID: 7349705873515691038}
+  sprites:
+  - {fileID: 392112759, guid: 1f66df0d40cdb4421b9d7226308120df, type: 3}
+  - {fileID: 1648828948, guid: 1f66df0d40cdb4421b9d7226308120df, type: 3}
+  - {fileID: 486779667, guid: 1f66df0d40cdb4421b9d7226308120df, type: 3}
+  a_up: 0
+  a_down: 0
+  a_left: 0
+  a_right: 0
+  b_up: 0
+  b_down: 0
+  b_left: 0
+  b_right: 0
 --- !u!114 &-8653401348751338502
 MonoBehaviour:
   m_ObjectHideFlags: 0

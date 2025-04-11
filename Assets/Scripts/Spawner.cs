@@ -15,10 +15,8 @@ public class Spawner : MonoBehaviourPunCallbacks
         grid = GameObject.FindObjectOfType<Grid>();
         GameObject.FindObjectOfType<ServerPlayer>().OnReadyUp.AddListener(() => {
             for(int i=0; i < Count; i++) {
-                Debug.Log("hhh");
                 var pos = Random.insideUnitCircle*RadiusVal;
-                var tmp = PhotonNetwork.Instantiate("Food", pos, Quaternion.identity);
-                DOTween.To(()=> tmp.transform.position, x=> tmp.transform.position = x, (Vector3)grid.trans(pos), 1f);
+                FoodManager.Instance.Spawn(pos, (Vector3)grid.trans(pos));
             }
         });
     }

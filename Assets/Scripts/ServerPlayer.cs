@@ -45,12 +45,12 @@ public class ServerPlayer : MonoBehaviourPunCallbacks
 			photonView.RPC("ReadyUpInit", RpcTarget.All);
 		});
 
-		if(photonView.IsMine) {
+		//if(photonView.IsMine) {
 			var b = GameObject.FindObjectsOfType<Base>();
 			foreach(var ba in b) {
 				teams.Add(ba);
 			}
-		}
+		//}
     }
 
     public override void OnConnectedToMaster()
@@ -72,7 +72,10 @@ public class ServerPlayer : MonoBehaviourPunCallbacks
 					Time.timeScale = 1;
 					PhotonNetwork.LoadLevel(0);
 				}
-			} else if(teams.Count(x => x.alive) == 1) {
+			} else if(
+				teams.Count(x => x.alive) == 1
+				&& teams.Where(x => x.livingPlayerCount > 0).Count() == 1
+			) {
 				winner = teams.Where(x => x.alive).First().teamId;
 				WinPanel.SetActive(true);
 				WinPanelText.text = $"Team {winner} Wins!";
@@ -123,7 +126,6 @@ public class ServerPlayer : MonoBehaviourPunCallbacks
 	public override void OnJoinedRoom(){
 		Debug.Log($"Connected to Room -> {PhotonNetwork.CurrentRoom}");
 		var p = PhotonNetwork.Instantiate("SnakeHead", Vector3.zero, Quaternion.identity);
-		p.GetComponent<Snake>().teamId = -1;
 
 		photonView.RPC("RefreshPlayerList", RpcTarget.All);
 	}
